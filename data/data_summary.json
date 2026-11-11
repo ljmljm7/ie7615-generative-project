@@ -1,0 +1,43 @@
+{
+  "dataset": "COCO Captions val2017",
+  "config": {
+    "seed": 42,
+    "n_images": 1000,
+    "captions_per_image": 5,
+    "min_words": 5,
+    "max_words": 30,
+    "split_ratios": [
+      0.8,
+      0.1,
+      0.1
+    ],
+    "drop_grayscale": false
+  },
+  "filtering": {
+    "paired": 25014,
+    "after_empty": 25014,
+    "after_length": 25003,
+    "after_duplicates": 24989,
+    "after_image_check": 24989
+  },
+  "final": {
+    "images": 1000,
+    "pairs": 5000,
+    "grayscale_images": 0,
+    "per_split": {
+      "train": {
+        "images": 800,
+        "pairs": 4000
+      },
+      "val": {
+        "images": 100,
+        "pairs": 500
+      },
+      "test": {
+        "images": 100,
+        "pairs": 500
+      }
+    },
+    "caption_words_mean": 10.44
+  }
+}
