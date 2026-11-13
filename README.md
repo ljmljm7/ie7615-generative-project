@@ -10,25 +10,35 @@ image ──► CLIP ViT-B/32 (frozen) ──► 512-d ──► mapping network
 caption ──► GPT-2 tokenizer ──► token ids (decoder input and training target)
 ```
 
-## Milestone status
+## Milestones
 
-| Milestone | Scope | Status |
-| --- | --- | --- |
-| 1 | Dataset preparation, environment setup, image → embedding pipeline, GPT-2 tokenization | Done |
-| 2 | Mapping network training, baseline caption generation, decoding strategies (greedy, beam, nucleus) | Planned |
+| Milestone | Scope | Due | Status |
+| --- | --- | --- | --- |
+| 1 | Dataset preparation, environment setup, image → embedding pipeline, GPT-2 tokenization | Nov 2026 | Done |
+| 2 | CLIP–GPT-2 integration (prefix conditioning), training, baseline captions, decoding strategies | Nov 22 | Done |
+| 3 | BLEU, METEOR, CIDEr, ROUGE-L; parameter sensitivity; full fine-tuning vs. LoRA vs. prefix tuning | Nov 28 | Planned |
+| 4 | Final report, captions gallery, slides and demo video | Dec 4 | Planned |
 
 ## Repository structure
 
 ```
-├── Generative_Milestone1_Group3.ipynb   # Milestone 1 notebook (Part A + Part B)
-├── data/
+├── README.md
+├── Generative_Milestone1_Group3.ipynb   # M1: dataset preparation, CLIP embeddings, tokenization
+├── Generative_Milestone2_Group3.ipynb   # M2: model, training, caption generation, decoding strategies
+├── data/                                # M1 outputs
 │   ├── coco_captions_clean.csv          # 5,000 cleaned image–caption pairs with split labels
 │   ├── data_summary.json                # preprocessing config and counts
 │   └── clip_image_embs.pt               # CLIP image embeddings (1,000 × 512) with image ids
-└── README.md
+└── results/
+    └── milestone2/
+        ├── training_log.csv             # train / validation loss per epoch
+        ├── training_summary.json        # best epoch, best validation loss, settings
+        ├── loss_curve.png
+        ├── generated_captions.csv       # 10 test images × 3 decoding strategies
+        └── caption_samples.png
 ```
 
-COCO images are not stored in this repository. The notebook downloads them.
+COCO images are not stored in this repository; the notebooks download them. The trained checkpoint `mapping_net.pt` (126 MB) is above GitHub's 100 MB file limit and is kept in the team's Google Drive folder.
 
 ## Dataset
 
@@ -44,24 +54,66 @@ COCO Captions **val2017** (5,000 images, 25,014 captions), used as the full data
 
 Preprocessing: pair images and captions by `image_id`; lowercase, normalize whitespace and punctuation spacing, drop the trailing period; remove captions shorter than 5 or longer than 30 words and duplicate captions; check every image for corruption; split by `image_id` so no image appears in two splits.
 
-`coco_captions_clean.csv` columns: `image_id`, `file_name`, `caption`, `split`, plus `ann_id`, `caption_raw`, `n_words`, `width`, `height`, `is_gray`.
+## Model
+
+| Component | Configuration | Parameters | Trained |
+| --- | --- | --- | --- |
+| CLIP image encoder | ViT-B/32, embeddings precomputed in M1 | — | No |
+| Mapping network | MLP 512 → 3,840 → 7,680, reshaped to 10 × 768 | 31,468,800 | Yes |
+| GPT-2 decoder | `gpt2` (12 layers, 768 hidden units) | 124,439,808 | No |
+
+The L2-normalized CLIP embedding is mapped to 10 prefix vectors, which are placed in front of the caption token embeddings and fed to GPT-2 as `inputs_embeds`. The loss is cross-entropy on caption tokens with teacher forcing; prefix and padding positions are set to −100.
 
 ## How to run
 
-1. Open `Generative_Milestone1_Group3.ipynb` in Google Colab and set the runtime to **GPU** (T4 is enough).
-2. Set `DRIVE_OUT_DIR` in the Part A configuration cell to the folder where outputs should be saved. Part B saves `clip_image_embs.pt` to `save_dir`, which should point to the same folder.
-3. Run all cells in order. **Part A must run before Part B**, because Part B uses the Part A table (`sub`) and image folder (`IMG_DIR`).
+Open the notebooks in Google Colab with a **GPU** runtime (T4 is enough) and run all cells in order.
 
-| Part | What it does | Output |
-| --- | --- | --- |
-| A. Dataset preparation | Downloads COCO val2017, pairs, cleans, filters, splits | `coco_captions_clean.csv`, `data_summary.json` |
-| B. CLIP embedding and GPT-2 tokenization | Embeds the 1,000 images with CLIP, runs the 5-sample test, tokenizes captions | `clip_image_embs.pt` |
+**Milestone 1** — `Generative_Milestone1_Group3.ipynb`
+1. Set `DRIVE_OUT_DIR` in the Part A configuration cell to the output folder. Part B saves `clip_image_embs.pt` to `save_dir`, which should point to the same folder.
+2. Part A must run before Part B, because Part B uses the Part A table (`sub`) and image folder (`IMG_DIR`).
 
-Main settings (Part A, cell 0): `N_IMAGES = 1000`, `CAPTIONS_PER_IMAGE = 5`, `MIN_WORDS, MAX_WORDS = 5, 30`, `SPLIT_RATIOS = (0.8, 0.1, 0.1)`, `SEED = 42`.
+**Milestone 2** — `Generative_Milestone2_Group3.ipynb`
+1. Set `DATA_SOURCE` in the configuration cell: `'drive'` reads the M1 outputs from `DRIVE_DIR`, `'github'` clones this repository and reads `data/`. Outputs go to `OUT_DIR` (`DRIVE_DIR/milestone2`).
+2. Sections 0–8 train the mapping network and save `mapping_net.pt`; sections 9–12 load it and generate captions.
+3. If you re-run the model cell, re-run the optimizer cell and the training cell after it. Otherwise the optimizer keeps updating the old model and the loss does not change.
+
+Main settings: prefix length 10, GPT-2 frozen, batch size 32, AdamW (lr 2 × 10⁻⁴, 100 warmup steps, linear decay), up to 20 epochs with early stopping (patience 3), max caption length 30 tokens.
 
 ### Shared Google Drive folder
 
-`/content/drive/MyDrive/...` points to the Drive of whoever runs the notebook. To save into a folder a teammate shared with you, add a shortcut to it in **My Drive** (right-click the folder in *Shared with me* → Organize → Add shortcut → My Drive) and remount Drive with `drive.mount('/content/drive', force_remount=True)`.
+`/content/drive/MyDrive/...` points to the Drive of whoever runs the notebook. To use a folder a teammate shared with you, add a shortcut to it in **My Drive** (right-click the folder in *Shared with me* → Organize → Add shortcut → My Drive) and remount Drive with `drive.mount('/content/drive', force_remount=True)`.
+
+### Loading the outputs
+
+```python
+import pandas as pd, torch
+
+df  = pd.read_csv('data/coco_captions_clean.csv')
+emb = torch.load('data/clip_image_embs.pt', weights_only=False)   # {'ids': [...], 'embs': tensor(1000, 512)}
+model, ckpt = load_model('.../milestone2/mapping_net.pt', device) # load_model is defined in the M2 notebook
+```
+
+`weights_only=False` is needed because the saved image ids are NumPy integers, which recent PyTorch versions do not load in the default safe mode.
+
+## Results
+
+### Milestone 1
+
+- 1,000 images embedded into a **1,000 × 512** tensor.
+- Sample 5 image–caption test: CLIP picked the correct caption out of 5 for **5 of 5** images (retrieval sanity check).
+- All 5,000 captions tokenized with the GPT-2 tokenizer; 4 captions longer than 30 tokens were truncated in M2.
+
+### Milestone 2
+
+| | Value |
+| --- | --- |
+| Best epoch | 3 of 6 (early stopping) |
+| Best validation loss / perplexity | **2.674 / 14.49** |
+| Training time | about 30 s per epoch on a T4 |
+
+- Validation loss was lowest at epoch 3 and then rose while training loss kept falling, which indicates overfitting on the 800 training images.
+- Captions for 10 test images with greedy decoding, beam search (5 beams), and nucleus sampling (top-p = 0.9): greedy and beam search fell into repetition loops, which `no_repeat_ngram_size = 3` removed. Beam search with this setting is the baseline.
+- The model usually captures the main subject and scene but misses actions, small objects, and counts.
 
 ## Environment
 
@@ -69,30 +121,11 @@ Tested on Google Colab with an NVIDIA T4 GPU.
 
 | Package | Version |
 | --- | --- |
-| Python | 3 (Colab default) |
+| Python | 3.13 (Colab default) |
 | PyTorch | 2.14.1 (CUDA build) |
 | Hugging Face Transformers | 5.22.1 |
 
-Pretrained weights from the Hugging Face Hub: `openai/clip-vit-base-patch32` (CLIP) and `gpt2` (tokenizer). Colab includes all required packages, so no installation cell is needed.
-
-## Milestone 1 results
-
-- 1,000 images embedded into a **1,000 × 512** tensor.
-- Sample 5 image–caption test: for each of 5 images, CLIP picked the most similar of 5 captions by cosine similarity and chose the **correct caption 5 of 5 times**. This is a retrieval sanity check, not an evaluation of generated captions.
-- All 5,000 captions tokenized with the GPT-2 tokenizer; a 20-token limit covers 99.0% of captions.
-
-## Loading the outputs
-
-```python
-import pandas as pd, torch
-
-df = pd.read_csv('data/coco_captions_clean.csv')
-emb = torch.load('data/clip_image_embs.pt', weights_only=False)   # {'ids': [...], 'embs': tensor(1000, 512)}
-
-train_ids = set(df.loc[df['split'] == 'train', 'image_id'])
-```
-
-`weights_only=False` is needed because the saved image ids are NumPy integers, which recent PyTorch versions do not load in the default safe mode.
+Pretrained weights from the Hugging Face Hub: `openai/clip-vit-base-patch32` (CLIP) and `gpt2` (GPT-2 and tokenizer). Colab includes all required packages, so no installation cell is needed.
 
 ## Data license
 
