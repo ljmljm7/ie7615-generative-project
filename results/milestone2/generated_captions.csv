@@ -1,0 +1,31 @@
+image_id,method,no_repeat,caption
+4134,greedy,3,a man and a woman in a man's man's chair
+4134,beam,3,a man and a woman sitting on a table
+4134,nucleus,3,the man and the woman being in a thong
+7108,greedy,3,a group of elephants standing in a field
+7108,beam,3,a group of elephants standing in front of a fence
+7108,nucleus,3,a young elephant walking in a field
+7784,greedy,3,a man is flying a kite with a kilt
+7784,beam,3,a man is flying a kite in the air
+7784,nucleus,3,a kite flying on the field
+9448,greedy,3,a young girl standing in the grass
+9448,beam,3,a young girl standing in front of a pool
+9448,nucleus,3,a woman with her little black scarf on
+29675,greedy,3,a box of hamburgers is sitting on a table
+29675,beam,3,a box of hamburgers is sitting on a table
+29675,nucleus,3,a group of three food cabs sitting on a table
+32334,greedy,3,a man and woman are standing in a kitchen table
+32334,beam,3,a man holding a glass of wine in his hand
+32334,nucleus,3,a man is holding a glass of wine and looking out the window
+46872,greedy,3,a man is standing on a concrete platform with a hose
+46872,beam,3,a person is standing on a dock with a hose running down the side of the dock
+46872,nucleus,3,a group of men wearing white boots and a black shirt sit on a concrete deck
+47828,greedy,3,a bridge with a bridge and a train
+47828,beam,3,a wooden bridge with a bridge on top of it
+47828,nucleus,3,a bridge with a large wooden bridge with some sort of train nearby
+50380,greedy,3,a man standing on a horse with a man in the background
+50380,beam,3,a man standing on a horse with a man in the background
+50380,nucleus,3,a man standing on a horse riding in a crowd
+66817,greedy,3,a plate of food on a table with a spoon on top
+66817,beam,3,a bowl of food is sitting on a plate on a table
+66817,nucleus,3,the food is on a plate and is covered in milk

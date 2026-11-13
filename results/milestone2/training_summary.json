@@ -1,0 +1,20 @@
+{
+  "best_epoch": 3,
+  "best_val_loss": 2.6736,
+  "best_val_ppl": 14.49,
+  "epochs_run": 6,
+  "trainable_params": 31468800,
+  "config": {
+    "prefix_len": 10,
+    "freeze_gpt": true,
+    "normalize_emb": true,
+    "max_len": 30,
+    "batch_size": 32,
+    "lr": 0.0002,
+    "warmup": 100,
+    "weight_decay": 0.01,
+    "dropout": 0.1,
+    "patience": 3,
+    "seed": 42
+  }
+}
